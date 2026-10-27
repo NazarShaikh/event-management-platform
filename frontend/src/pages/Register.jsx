@@ -1,8 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+
 
 function Register() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+
+  const role = location.state?.role || 'attendee'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -36,7 +41,11 @@ function Register() {
     }
 
     navigate('/login/verify-otp', {
-      state: { email: formData.email.trim() },
+        state: {
+            email: formData.email.trim(),
+            role: role,
+            name: formData.name.trim(),
+        },
     })
   }
 
@@ -66,6 +75,9 @@ function Register() {
 
         <p className="mt-2 text-sm leading-6 text-neutral-400">
           Join Ellevents and discover experiences worth sharing.
+        </p>
+        <p className="mt-2 text-sm text-neutral-400">
+        Registering as: <span className="font-semibold capitalize text-blue-500">{role}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
