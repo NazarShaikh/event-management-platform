@@ -48,13 +48,19 @@ const eventSchema = new mongoose.Schema(
         validator: function (value) {
           return !this.startDate || value >= this.startDate;
         },
-        message: "End date must be after the start date",
+        message: "End date must be on or after the start date",
       },
     },
 
     registrationDeadline: {
       type: Date,
       required: [true, "Registration deadline is required"],
+      validate: {
+        validator: function (value) {
+          return !this.startDate || value <= this.startDate;
+        },
+        message: "Registration deadline must be on or before the event starts",
+      },
     },
 
     capacity: {
@@ -64,6 +70,16 @@ const eventSchema = new mongoose.Schema(
       validate: {
         validator: Number.isInteger,
         message: "Capacity must be a whole number",
+      },
+    },
+
+    registeredCount: {
+      type: Number,
+      default: 0,
+      min: [0, "Registered count cannot be negative"],
+      validate: {
+        validator: Number.isInteger,
+        message: "Registered count must be a whole number",
       },
     },
 
