@@ -80,11 +80,8 @@ function Login() {
         </p>
         <p className="mt-6 text-center text-sm text-neutral-400">
             Don't have an account?{' '}
-            <Link
-                to="/register"
-                className="font-semibold text-blue-500 hover:underline"
-            >
-                Sign up
+            <Link to="/select-role" className="font-semibold text-blue-500 hover:underline">
+            Sign Up
             </Link>
         </p>
       </section>
