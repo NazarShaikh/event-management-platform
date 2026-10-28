@@ -1,7 +1,7 @@
 
 const mongoose = require("mongoose");
 const Event = require("../models/Event");
-
+const Registration = require("../models/Registration");
 // Create an event (organizers only)
 const createEvent = async (req, res) => {
   try {
@@ -479,7 +479,10 @@ const updateEvent = async (req, res) => {
 };
 
 
+
 const cancelEvent = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const { eventId } = req.params;
 
@@ -490,51 +493,77 @@ const cancelEvent = async (req, res) => {
       });
     }
 
-    // Find the event only if it belongs to this organizer
-    const event = await Event.findOne({
-      _id: eventId,
-      organizer: req.user.userId,
+    let cancelledEvent;
+
+    await session.withTransaction(async () => {
+      const event = await Event.findOne({
+        _id: eventId,
+        organizer: req.user.userId,
+      }).session(session);
+
+      if (!event) {
+        const error = new Error(
+          "Event not found or you are not its organizer"
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (event.status === "cancelled") {
+        const error = new Error("This event has already been cancelled");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (event.startDate <= new Date()) {
+        const error = new Error(
+          "Events cannot be cancelled after they have started"
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+
+      await Registration.updateMany(
+        {
+          event: event._id,
+          status: "confirmed",
+        },
+        { $set: { status: "cancelled" } },
+        { session }
+      );
+
+      event.status = "cancelled";
+      event.registeredCount = 0;
+
+      await event.save({ session });
+
+      cancelledEvent = event;
     });
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found or you are not its organizer",
-      });
-    }
-
-    if (event.status === "cancelled") {
-      return res.status(400).json({
-        success: false,
-        message: "This event has already been cancelled",
-      });
-    }
-
-    // Prevent cancellation after the event has started
-    if (event.startDate <= new Date()) {
-      return res.status(400).json({
-        success: false,
-        message: "Events cannot be cancelled after they have started",
-      });
-    }
-
-    event.status = "cancelled";
-    await event.save();
 
     return res.status(200).json({
       success: true,
       message: "Event cancelled successfully",
-      event,
+      event: cancelledEvent,
     });
   } catch (error) {
     console.error("Cancel event error:", error.message);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
 
     return res.status(500).json({
       success: false,
       message: "Unable to cancel event",
     });
+  } finally {
+    await session.endSession();
   }
 };
+
 
 
 
