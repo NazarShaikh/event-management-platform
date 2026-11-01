@@ -4,12 +4,20 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Register a new attendee
+
+// Register a new attendee or organizer
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Check required fields
-    if (!name || !email || !password) {
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      typeof email !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
         message: "Name, email and password are required",
@@ -24,9 +32,21 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // Check if the account already exists
+    // Allow only attendee or organizer roles
+    const selectedRole = role || "attendee";
+
+    if (!["attendee", "organizer"].includes(selectedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Choose attendee or organizer",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if account already exists
     const existingUser = await User.findOne({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (existingUser) {
@@ -36,20 +56,20 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // Hash the password before saving
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Public registration always creates an attendee
+    // Create account with selected role
     const user = await User.create({
-      name,
-      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
-      role: "attendee",
+      role: selectedRole,
     });
 
     return res.status(201).json({
       success: true,
-      message: "Account registered successfully",
+      message: `${selectedRole} account registered successfully`,
       user: {
         id: user._id,
         name: user.name,
@@ -57,8 +77,8 @@ const registerUser = async (req, res) => {
         role: user.role,
       },
     });
+
   } catch (error) {
-    // Handle duplicate emails, including simultaneous requests
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -74,6 +94,7 @@ const registerUser = async (req, res) => {
     });
   }
 };
+
 
 // Log in an existing user
 const loginUser = async (req, res) => {
