@@ -1,42 +1,60 @@
+import { Link } from 'react-router-dom'
+import { getEventImage } from '../utils/eventHelpers'
+
 function EventCard({ event }) {
+  // Format the event date
+  const formattedDate = event.startDate
+    ? new Date(event.startDate).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : 'Date to be announced'
+
+  const imageUrl = getEventImage(event)
+
   return (
-    <article className="group overflow-hidden rounded-2xl border border-stone-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative h-52 overflow-hidden bg-stone-200">
+    <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-800 bg-[#101318] transition duration-300 hover:-translate-y-1 hover:border-fuchsia-500/60">
+      {/* Event image */}
+      <div className="relative h-44 overflow-hidden bg-gray-900 sm:h-48">
         <img
-          src={event.image}
+          src={imageUrl}
           alt={event.title}
+          loading="lazy"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
 
-        <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#123D35]">
-          {event.category}
+        <span className="absolute left-3 top-3 rounded-md bg-fuchsia-600 px-3 py-1 text-xs font-semibold text-white">
+          {event.category || 'Event'}
         </span>
       </div>
 
-      <div className="p-5">
-        <p className="text-sm font-medium text-[#F06A35]">
-          {event.date}
+      {/* Event information */}
+      <div className="flex flex-1 flex-col p-4">
+        <p className="text-xs font-semibold text-fuchsia-400 sm:text-sm">
+          {formattedDate}
         </p>
 
-        <h3 className="mt-2 text-xl font-bold text-[#123D35]">
+        <h3 className="mt-2 line-clamp-2 text-base font-bold leading-6 text-white sm:text-lg">
           {event.title}
         </h3>
 
-        <p className="mt-2 text-sm text-stone-500">
-          📍 {event.location}
+        <p className="mt-2 text-sm text-gray-400">
+          📍 {event.venue || 'Location to be announced'}
         </p>
 
-        <div className="mt-5 flex items-center justify-between border-t border-stone-100 pt-4">
-          <p className="font-semibold text-stone-800">
-            {event.price}
-          </p>
+        <p className="mt-2 text-sm text-gray-400">
+          {event.registeredCount ?? 0} registered
+          {event.capacity ? ` · ${event.capacity} seats` : ''}
+        </p>
 
-          <button
-            type="button"
-            className="rounded-full bg-[#123D35] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1B5147]"
+        <div className="mt-auto pt-4">
+          <Link
+            to={`/events/${event._id || event.id}`}
+            className="block w-full rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-500"
           >
-            View details
-          </button>
+            View Details
+          </Link>
         </div>
       </div>
     </article>

@@ -7,22 +7,23 @@ function RoleSelection() {
     <main className="flex min-h-screen items-center justify-center bg-black px-5 py-10 text-white">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="mb-10 flex justify-center">
+        <div className="mb-8 flex flex-col items-center justify-center gap-3">
           <img
-            src="/images/ellevents-logo.png"
-            alt="Elleven ts"
-            className="h-auto w-56 object-contain"
+            src="/images/app-logo.png"
+            alt="AllEvents logo"
+            className="h-20 w-20 rounded-2xl object-contain shadow-xl shadow-blue-600/30"
           />
+          <span className="text-2xl font-black tracking-tight">all<span className="text-blue-500">events</span></span>
         </div>
 
         {/* Heading */}
         <div className="mb-8 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-500">
-            Welcome to Ellevents
+            Welcome to AllEvents
           </p>
 
           <h1 className="mt-3 text-3xl font-bold">
-            How will you use Ellevents?
+            How will you use AllEvents?
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-neutral-400">
@@ -55,7 +56,19 @@ function RoleSelection() {
         {/* Organizer Option */}
         <button
           type="button"
-          onClick={() => navigate('/register', { state: { role: 'organizer' } })}
+          onClick={() => {
+            try {
+              const stored = localStorage.getItem('user')
+              if (stored) {
+                const u = JSON.parse(stored)
+                localStorage.setItem('user', JSON.stringify({ ...u, role: 'organizer' }))
+                window.dispatchEvent(new Event('storage'))
+              }
+            } catch {
+              // ignore
+            }
+            navigate('/organizer')
+          }}
           className="w-full rounded-2xl border border-neutral-700 bg-neutral-950 p-5 text-left transition hover:border-blue-500 hover:bg-neutral-900"
         >
           <div className="flex items-center gap-4">

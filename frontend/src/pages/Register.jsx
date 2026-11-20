@@ -1,52 +1,78 @@
 import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-
+import { Link, useNavigate } from 'react-router-dom'
+import { registerUser } from '../services/authApi'
 
 function Register() {
   const navigate = useNavigate()
-  const location = useLocation()
-
-
-  const role = location.state?.role || 'attendee'
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
+    confirmPassword: '',
   })
-
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (event) => {
     const { name, value } = event.target
-
-    setFormData((previous) => ({
-      ...previous,
-      [name]: value,
-    }))
-
+    setFormData((previous) => ({ ...previous, [name]: value }))
     setError('')
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
+    setError('')
 
-    if (!formData.name.trim() || !formData.email.trim()) {
+    const name = formData.name.trim()
+    const email = formData.email.trim().toLowerCase()
+    const { password, confirmPassword } = formData
+
+    if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all fields.')
       return
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Please enter a valid email address.')
       return
     }
 
-    navigate('/login/verify-otp', {
-        state: {
-            email: formData.email.trim(),
-            role: role,
-            name: formData.name.trim(),
-        },
-    })
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await registerUser({ name, email, password })
+
+      if (!response.success) {
+        setError(response.message || 'Unable to create your account. Please try again.')
+        return
+      }
+
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user))
+        window.dispatchEvent(new Event('storage'))
+      }
+
+      navigate('/login', {
+        replace: true,
+        state: { message: 'Account created. Log in with your email and password.' },
+      })
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          'Unable to create your account. Please try again.',
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -56,68 +82,90 @@ function Register() {
           type="button"
           onClick={() => navigate('/login')}
           aria-label="Go back to login"
-          className="mb-10 w-fit text-3xl text-white hover:text-blue-400"
+          className="mb-8 w-fit text-3xl text-white transition hover:text-blue-400"
         >
           ←
         </button>
 
-        <div className="mb-8 flex items-center gap-3">
-          <img
-            src="/images/ellevents-logo.png"
-            alt="Elleven ts"
-            className="h-12 w-auto object-contain"
-          />
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <img
+              src="/images/app-logo.png"
+              alt="AllEvents logo"
+              className="h-10 w-10 rounded-xl object-contain shadow-lg shadow-blue-600/30"
+            />
+            <span className="text-xl font-bold tracking-tight">all<span className="text-blue-500">events</span></span>
+          </div>
+          <h1 className="text-3xl font-bold">Create your account</h1>
         </div>
 
-        <h1 className="text-2xl font-semibold">
-          Create your account
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-neutral-400">
-          Join Ellevents and discover experiences worth sharing.
-        </p>
-        <p className="mt-2 text-sm text-neutral-400">
-        Registering as: <span className="font-semibold capitalize text-blue-500">{role}</span>
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label
-              htmlFor="name"
-              className="mb-2 block text-sm font-medium text-neutral-300"
-            >
+            <label htmlFor="name" className="mb-2 block text-sm text-gray-300">
               Full name
             </label>
-
             <input
               id="name"
               name="name"
               type="text"
               autoComplete="name"
-              placeholder="Enter your full name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full rounded-lg border border-neutral-700 bg-black px-4 py-3 text-sm outline-none placeholder:text-neutral-500 focus:border-blue-500"
+              placeholder="Enter your full name"
+              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none transition focus:border-blue-500"
+              required
             />
           </div>
 
           <div>
-            <label
-              htmlFor="register-email"
-              className="mb-2 block text-sm font-medium text-neutral-300"
-            >
+            <label htmlFor="email" className="mb-2 block text-sm text-gray-300">
               Email address
             </label>
-
             <input
-              id="register-email"
+              id="email"
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="name@email.com"
               value={formData.email}
               onChange={handleChange}
-              className="w-full rounded-lg border border-neutral-700 bg-black px-4 py-3 text-sm outline-none placeholder:text-neutral-500 focus:border-blue-500"
+              placeholder="you@example.com"
+              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none transition focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="mb-2 block text-sm text-gray-300">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="At least 8 characters"
+              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none transition focus:border-blue-500"
+              minLength={8}
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="mb-2 block text-sm text-gray-300">
+              Confirm password
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Re-enter your password"
+              className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none transition focus:border-blue-500"
+              required
             />
           </div>
 
@@ -129,18 +177,16 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 py-3 font-semibold transition hover:bg-blue-500"
+            disabled={loading}
+            className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Continue with Email
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
-        <p className="mt-auto pt-10 text-center text-sm text-neutral-400">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <Link
-            to="/login"
-            className="font-semibold text-blue-500 hover:underline"
-          >
+          <Link to="/login" className="font-medium text-blue-400 hover:underline">
             Log in
           </Link>
         </p>

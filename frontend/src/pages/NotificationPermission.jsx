@@ -30,12 +30,13 @@ function NotificationPermission() {
     <main className="flex min-h-screen items-center justify-center bg-black px-5 py-10 text-white">
       <div className="w-full max-w-md text-center">
         {/* Logo */}
-        <div className="mb-12 flex justify-center">
+        <div className="mb-10 flex flex-col items-center justify-center gap-3">
           <img
-            src="/images/ellevents-logo.png"
-            alt="Elleven ts"
-            className="h-auto w-56 object-contain"
+            src="/images/app-logo.png"
+            alt="AllEvents logo"
+            className="h-16 w-16 rounded-2xl object-contain shadow-xl shadow-blue-600/30"
           />
+          <span className="text-xl font-bold tracking-tight">all<span className="text-blue-500">events</span></span>
         </div>
 
         {/* Notification Icon */}
